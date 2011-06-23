@@ -1,0 +1,8 @@
+//
+// Prefix header for all source files of the 'Route 50 iPad' target in the 'Route 50 iPad' project
+//
+
+#ifdef __OBJC__
+    #import <Foundation/Foundation.h>
+    #import <UIKit/UIKit.h>
+#endif
