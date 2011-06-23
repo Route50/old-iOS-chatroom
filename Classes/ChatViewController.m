@@ -282,6 +282,7 @@
 	NSString *message = [[self.entries objectAtIndex:entry] objectAtIndex:2];
 	cell.textLabel.numberOfLines = 0;
 	cell.textLabel.lineBreakMode = UILineBreakModeWordWrap;
+	cell.textLabel.textColor = [UIColor blackColor];
 	
 	cell.detailTextLabel.text = user;
 	cell.detailTextLabel.font = [UIFont systemFontOfSize:12];
