@@ -52,6 +52,7 @@
 	[invocation setTarget:self];
 	[invocation setSelector:@selector(timerCallback)];
 	self.userbarPollingTimer = [NSTimer scheduledTimerWithTimeInterval:15 invocation:invocation repeats:NO];
+	[parser release];
 }
 
 -(void)timerCallback

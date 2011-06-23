@@ -144,6 +144,7 @@
 		{
 			[self loginSuccess];
 		}
+		[parser release];
 	}
 }
 
@@ -210,6 +211,7 @@
 	[invocation setTarget:self];
 	[invocation setSelector:@selector(timerCallback)];
 	urlPoll = [NSTimer scheduledTimerWithTimeInterval:2.5 invocation:invocation repeats:NO];
+	[parser release];
 }
 
 -(void)timerCallback
