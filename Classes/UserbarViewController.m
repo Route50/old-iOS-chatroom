@@ -87,7 +87,7 @@
 //	}
 	
 	NSLog(@"Request for data at %d:%d",section,row);
-	NSLog(@"Data at %d:%d - %@",[[self.users objectAtIndex:section] objectAtIndex:row]);
+	NSLog(@"Data at %d:%d - %@",section,row,[[self.users objectAtIndex:section] objectAtIndex:row]);
 	cell.textLabel.text = [[self.users objectAtIndex:section] objectAtIndex:row];
 	NSLog(@"Text Set.");
 	
