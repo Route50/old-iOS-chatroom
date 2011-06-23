@@ -30,6 +30,7 @@
 	self.chatMessage.delegate = self;
 	
 	// Instantiate Chat
+	timerSet = NO;
 	[self checkForMessages];
 	
 	// Super
@@ -167,55 +168,66 @@
 {
 	NSLog(@"Check For Messages");
 	NSLog(@"Newest Message: %d",self.newestMessage);
-	SBJsonParser *parser = [[SBJsonParser alloc] init];
 	NSString *urlString = [NSString stringWithFormat:@"http://route50.net/chat/new/%d?room=lobby&textonly=1",self.newestMessage];
 	NSURL *url = [NSURL URLWithString:urlString];
 	
 	NSLog(@"Checking %@",urlString);
 	
-	NSString *json = [NSString stringWithContentsOfURL:url encoding:NSUTF8StringEncoding error:nil];
-	NSArray *messages = [parser objectWithString:json];
-	
-	NSLog(@"Result: %@",json);
-	
-	NSLog(@"Messages Count: %d",[messages count]);
-	
-	for(int i = [messages count]-1;i >= 0;i--)
-	{
-		// if((NSUInteger)[[messages objectAtIndex:i] objectAtIndex:0] < self.newestMessage) continue; // Skip
-		
-		[self.entries addObject:[messages objectAtIndex:i]];
-		self.newestMessage = [[[messages objectAtIndex:i] objectAtIndex:4] intValue];
-		if([[[messages objectAtIndex:i] objectAtIndex:5] isEqual:[NSNumber numberWithInt:1]])
-		{
-			// Play the Sound
-			SystemSoundID ping;
-			NSString *path = [[NSBundle mainBundle] pathForResource:@"notify" ofType:@"mp3"];
-			AudioServicesCreateSystemSoundID((CFURLRef)[NSURL fileURLWithPath:path], &ping);
-			AudioServicesPlaySystemSound(ping);
-		}
-		
-		NSLog(@"Added: %@",[[messages objectAtIndex:i] objectAtIndex:2]);
-	}
-	[chatTable reloadData];
-	
-	NSHTTPCookieStorage *cookies = [NSHTTPCookieStorage sharedHTTPCookieStorage];
-	NSLog(@"Cookies: %@",cookies);
-
-	// Scroll to bottom
-	NSUInteger scrollTo = [self.entries count] - 1;
-	NSIndexPath *indexPath = [NSIndexPath indexPathForRow:MAX(0,scrollTo) inSection:0];
-	[self.chatTable scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionBottom animated:YES];
-	
-	NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:[self methodSignatureForSelector:@selector(timerCallback)]];
-	[invocation setTarget:self];
-	[invocation setSelector:@selector(timerCallback)];
-	urlPoll = [NSTimer scheduledTimerWithTimeInterval:2.5 invocation:invocation repeats:NO];
-	[parser release];
+	dispatch_queue_t queue = dispatch_queue_create("net.route50.fetcher", NULL); //Create a new dispatch queue
+	dispatch_async(queue, ^{ //Asynchronously run this block
+		currentlyCheckingForMessages = YES;
+		SBJsonParser *parser = [[SBJsonParser alloc] init];
+		NSString *json = [NSString stringWithContentsOfURL:url encoding:NSUTF8StringEncoding error:nil];
+		NSArray *messages = [parser objectWithString:json];
+		dispatch_sync(dispatch_get_main_queue(), ^{ //When the above statements are done, perform the following on the main thread (UI can only be changed on the main thread)
+			NSLog(@"Result: %@",json);
+			
+			NSLog(@"Messages Count: %d",[messages count]);
+			
+			for(int i = [messages count]-1;i >= 0;i--)
+			{
+				// if((NSUInteger)[[messages objectAtIndex:i] objectAtIndex:0] < self.newestMessage) continue; // Skip
+				
+				[self.entries addObject:[messages objectAtIndex:i]];
+				self.newestMessage = [[[messages objectAtIndex:i] objectAtIndex:4] intValue];
+				if([[[messages objectAtIndex:i] objectAtIndex:5] isEqual:[NSNumber numberWithInt:1]])
+				{
+					// Play the Sound
+					SystemSoundID ping;
+					NSString *path = [[NSBundle mainBundle] pathForResource:@"notify" ofType:@"mp3"];
+					AudioServicesCreateSystemSoundID((CFURLRef)[NSURL fileURLWithPath:path], &ping);
+					AudioServicesPlaySystemSound(ping);
+				}
+				
+				NSLog(@"Added: %@",[[messages objectAtIndex:i] objectAtIndex:2]);
+			}
+			[chatTable reloadData];
+			
+			NSHTTPCookieStorage *cookies = [NSHTTPCookieStorage sharedHTTPCookieStorage];
+			NSLog(@"Cookies: %@",cookies);
+			
+			// Scroll to bottom
+			NSUInteger scrollTo = [self.entries count] - 1;
+			NSIndexPath *indexPath = [NSIndexPath indexPathForRow:MAX(0,scrollTo) inSection:0];
+			[self.chatTable scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionBottom animated:YES];
+			
+			NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:[self methodSignatureForSelector:@selector(timerCallback)]];
+			[invocation setTarget:self];
+			[invocation setSelector:@selector(timerCallback)];
+			if (!timerSet) {
+				urlPoll = [NSTimer scheduledTimerWithTimeInterval:2.5 invocation:invocation repeats:NO];
+				timerSet = YES;
+			}
+			[parser release];
+			currentlyCheckingForMessages = NO;
+		});
+	});
+	dispatch_release(queue);
 }
 
 -(void)timerCallback
 {
+	timerSet = NO;
 	[self checkForMessages];
 }
 
@@ -233,7 +245,8 @@
 	[con release];
 	self.chatMessage.text = @"";
 	self.sendButton.enabled = YES;
-	[self checkForMessages];
+	if (!currentlyCheckingForMessages)
+		[self checkForMessages];
 }
 
 #pragma mark -

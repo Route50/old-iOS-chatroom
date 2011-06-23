@@ -14,6 +14,8 @@
 	NSMutableArray *entries;
 	NSUInteger newestMessage;
 	NSTimer *urlPoll;
+	BOOL timerSet;
+	BOOL currentlyCheckingForMessages;
 	UITableView *chatTable;
 	UITableViewCell *chatMessageCell;
 	CGSize lastKbSize;
