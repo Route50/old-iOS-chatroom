@@ -186,7 +186,7 @@
 			
 			for(int i = [messages count]-1;i >= 0;i--)
 			{
-				// if((NSUInteger)[[messages objectAtIndex:i] objectAtIndex:0] < self.newestMessage) continue; // Skip
+				if((NSUInteger)[[messages objectAtIndex:i] objectAtIndex:0] < self.newestMessage) continue; // Skip
 				
 				[self.entries addObject:[messages objectAtIndex:i]];
 				self.newestMessage = [[[messages objectAtIndex:i] objectAtIndex:4] intValue];
